@@ -111,7 +111,7 @@ Response Body :
 
 ## List Address
 
-Endpoint : POST /api/contacts/{idContact}/addresses
+Endpoint : GET /api/contacts/{idContact}/addresses
 
 Request Header :
 
