@@ -1,5 +1,6 @@
 import { prismaClient } from "../application/database";
 import {
+  LoginUserRequest,
   RegisterUserRequest,
   toUserResponse,
   UserResponse,
@@ -38,5 +39,49 @@ export class userService {
     // * Return Response
 
     return toUserResponse(user);
+  }
+
+  static async login(request: LoginUserRequest): Promise<UserResponse> {
+    // * Request Validation
+    request = userValidation.LOGIN.parse(request);
+
+    // * Check on Database
+    let user = await prismaClient.user.findUnique({
+      where: {
+        username: request.username,
+      },
+    });
+
+    if (!user) {
+      throw new HTTPException(401, {
+        message: "Username or password is wrong!",
+      });
+    }
+
+    // * Hashing password using bcrypt
+    const isPasswordValid = await Bun.password.verify(
+      request.password,
+      user.password,
+      "bcrypt"
+    );
+
+    if (!isPasswordValid) {
+      throw new HTTPException(401, {
+        message: "Username or password is wrong!",
+      });
+    }
+
+    user = await prismaClient.user.update({
+      where: {
+        username: request.username,
+      },
+      data: {
+        token: crypto.randomUUID(),
+      },
+    });
+
+    const response = toUserResponse(user);
+    response.token = user.token!;
+    return response;
   }
 }
