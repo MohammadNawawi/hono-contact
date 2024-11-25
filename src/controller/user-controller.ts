@@ -1,8 +1,14 @@
 import { Hono } from "hono";
-import { LoginUserRequest, RegisterUserRequest } from "../model/user-model";
+import {
+  LoginUserRequest,
+  RegisterUserRequest,
+  toUserResponse,
+} from "../model/user-model";
 import { userService } from "../service/user-service";
+import { ApplicationVariables } from "../model/app-model";
+import { User } from "@prisma/client";
 
-export const userController = new Hono();
+export const userController = new Hono<{ Variables: ApplicationVariables }>();
 
 userController.post("/api/users", async (c) => {
   const request = (await c.req.json()) as RegisterUserRequest;
@@ -25,5 +31,22 @@ userController.post("/api/users/login", async (c) => {
   // TODO : Return Response
   return c.json({
     data: response,
+  });
+});
+
+userController.use(async (c, next) => {
+  const token = c.req.header("Authorization");
+  const user = await userService.get(token);
+
+  c.set("user", user);
+
+  return next();
+});
+
+userController.get("/api/users/current", async (c) => {
+  const user = c.get("user") as User;
+
+  return c.json({
+    data: toUserResponse(user),
   });
 });
