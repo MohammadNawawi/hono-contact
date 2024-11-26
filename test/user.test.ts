@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import app from "../src";
 import { logger } from "../src/application/logging";
 import { UserTest } from "./test-util";
+import { password } from "bun";
+import { use } from "hono/jsx";
 
 describe("POST /api/users", () => {
   afterEach(async () => {
@@ -165,5 +167,78 @@ describe("GET /api/users/current", () => {
     const body = await response.json();
 
     expect(body.errors).toBeDefined();
+  });
+});
+
+describe("PATCH /api/users/current", () => {
+  beforeEach(async () => {
+    await UserTest.create();
+  });
+
+  afterEach(async () => {
+    await UserTest.delete();
+  });
+
+  it("should be rejected if request is invalid", async () => {
+    const response = await app.request("/api/users/current", {
+      method: "PATCH",
+      headers: {
+        Authorization: "test",
+      },
+      body: JSON.stringify({
+        name: "",
+        password: "",
+      }),
+    });
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+
+    expect(body.errors).toBeDefined();
+  });
+
+  it("should be able to update name", async () => {
+    const response = await app.request("/api/users/current", {
+      method: "PATCH",
+      headers: {
+        Authorization: "test",
+      },
+      body: JSON.stringify({
+        name: "Nawawi",
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(body.data).toBeDefined();
+    expect(body.data.name).toBe("Nawawi");
+  });
+  it("should be able to update password", async () => {
+    let response = await app.request("/api/users/current", {
+      method: "PATCH",
+      headers: {
+        Authorization: "test",
+      },
+      body: JSON.stringify({
+        password: "baru",
+      }),
+    });
+
+    expect(response.status).toBe(200);
+    const body = await response.json();
+
+    expect(body.data).toBeDefined();
+    expect(body.data.name).toBe("test");
+
+    response = await app.request("/api/users/login", {
+      method: "POST",
+      body: JSON.stringify({
+        username: "test",
+        password: "baru",
+      }),
+    });
+
+    expect(response.status).toBe(200);
   });
 });

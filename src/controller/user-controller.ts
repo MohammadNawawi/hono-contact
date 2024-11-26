@@ -3,6 +3,7 @@ import {
   LoginUserRequest,
   RegisterUserRequest,
   toUserResponse,
+  UpdateUserRequest,
 } from "../model/user-model";
 import { userService } from "../service/user-service";
 import { ApplicationVariables } from "../model/app-model";
@@ -48,5 +49,15 @@ userController.get("/api/users/current", async (c) => {
 
   return c.json({
     data: toUserResponse(user),
+  });
+});
+
+userController.patch("/api/users/current", async (c) => {
+  const user = c.get("user") as User;
+  const request = (await c.req.json()) as UpdateUserRequest;
+  const response = await userService.update(user, request);
+
+  return c.json({
+    data: response,
   });
 });
