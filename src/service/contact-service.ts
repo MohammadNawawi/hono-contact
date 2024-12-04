@@ -6,6 +6,7 @@ import {
 } from "../model/contact-model";
 import { ContactValidation } from "../validation/contact-validation";
 import { prismaClient } from "../application/database";
+import { HTTPException } from "hono/http-exception";
 
 export class ContactService {
   static async create(
@@ -22,6 +23,25 @@ export class ContactService {
     const contact = await prismaClient.contact.create({
       data: data,
     });
+
+    return toContactResponse(contact);
+  }
+
+  static async get(user: User, contactId: number): Promise<ContactResponse> {
+    contactId = ContactValidation.GET.parse(contactId);
+
+    const contact = await prismaClient.contact.findFirst({
+      where: {
+        id: contactId,
+        username: user.username,
+      },
+    });
+
+    if (!contact) {
+      throw new HTTPException(404, {
+        message: "Contact not found",
+      });
+    }
 
     return toContactResponse(contact);
   }
